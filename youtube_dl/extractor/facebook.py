@@ -65,6 +65,18 @@ class FacebookIE(InfoExtractor):
     _VIDEO_PAGE_TAHOE_TEMPLATE = 'https://www.facebook.com/video/tahoe/async/%s/?chain=true&isvideo=true&payloadtype=primary'
 
     _TESTS = [{
+        # from metadata "twitter:title"
+        'url': 'https://www.facebook.com/lauracoxofficial/posts/4885218148187069',
+        'md5': 'c3fb1e1397f2f8797ae2f4190d7dc262',
+        'info_dict': {
+            'id': '4885218148187069',
+            'ext': 'mp4',
+            'title': 'Dreams - Fleetwood Mac cover',
+            'uploader': 'Dreams - Fleetwood Mac cover', # one of the cases where it cannot be extracted properly
+            'upload_date': '20201210',
+            'timestamp': 1607623686,
+        },
+    }, {
         'url': 'https://www.facebook.com/video.php?v=637842556329505&fref=nf',
         'md5': '6a40d33c0eccbb1af76cf0485a052659',
         'info_dict': {
@@ -630,9 +642,19 @@ class FacebookIE(InfoExtractor):
 
         process_formats(formats)
 
-        video_title = self._html_search_regex(
-            r'<h2\s+[^>]*class="uiHeaderTitle"[^>]*>([^<]*)</h2>', webpage,
-            'title', default=None)
+        video_title = self._html_search_meta('twitter:title', webpage)
+        if not video_title:
+            video_title = self._html_search_regex(
+                r'<h2\s+[^>]*class="uiHeaderTitle"[^>]*>([^<]*)</h2>', webpage,
+                'title', default=None)
+        if not video_title:
+            video_title = self._html_search_regex(
+                r'(?s)<title id="pageTitle"[^>]*>([^<]*)(?: \| Facebook)</title>',
+                webpage, 'title', default=None)
+        if not video_title:
+            video_title = self._html_search_regex(
+                r'(?s)<meta property="og:title" content="([^"]+)"[^>]*/>',
+                webpage, 'title', default=None)
         if not video_title:
             video_title = self._html_search_regex(
                 r'(?s)<span class="fbPhotosPhotoCaption".*?id="fbPhotoPageCaption"><span class="hasCaption">(.*?)</span>',

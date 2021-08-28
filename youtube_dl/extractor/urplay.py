@@ -5,7 +5,9 @@ from .common import InfoExtractor
 from ..utils import (
     dict_get,
     int_or_none,
+    str_or_none,
     unified_timestamp,
+    url_or_none,
 )
 
 
@@ -72,6 +74,16 @@ class URPlayIE(InfoExtractor):
                     video_id, skip_protocols=['f4m', 'rtmp', 'rtsp']))
         self._sort_formats(formats)
 
+        subtitles = {}
+        swecomplete_streaming_info = urplayer_data['streamingInfo'].get('sweComplete')
+        if swecomplete_streaming_info:
+            sub_url = url_or_none(swecomplete_streaming_info.get('vtt')['location'])
+            if sub_url:
+                sub_lang = str_or_none(swecomplete_streaming_info.get('vtt')['language'])
+                subtitles.setdefault(sub_lang, []).append({
+                    'url': sub_url,
+                })
+
         image = urplayer_data.get('image') or {}
         thumbnails = []
         for k, v in image.items():
@@ -104,4 +116,5 @@ class URPlayIE(InfoExtractor):
             'season': series.get('label'),
             'episode': episode,
             'episode_number': int_or_none(urplayer_data.get('episodeNumber')),
+            'subtitles': subtitles,
         }
